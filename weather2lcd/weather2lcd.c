@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <wiringPi.h>
+#include <lcd.h>
 #include "metar_parser.h"
 
 static void parseFile(const char *filename) {
@@ -57,6 +59,7 @@ int main(int argc, char **argv) {
 		printf("Clouds: %s %d m\n",clouds.type[i],clouds.height[i]*30);
 	}
 
+        putenv("WIRINGPI_GPIOMEM=1");
         wiringPiSetup();
         int fd = lcdInit(2, 16, 4, 6, 5, 4, 0, 2, 3, 0, 0, 0, 0);
 	lcdClear(fd);
