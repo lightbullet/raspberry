@@ -1,7 +1,7 @@
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include <wiringPi.h>
 #include <lcd.h>
 #include "metar_parser.h"
@@ -30,8 +30,6 @@ static void parseFile(const char *filename) {
 }
 
 int main(int argc, char **argv) {
-   int errno, i2c_addr, c;
-
    char *s1 = "wget -q -O /tmp/weather.txt ";
    char *s2 = "http://weather.noaa.gov/pub/data/observations/metar/stations/EHRD.TXT";
    char *s3;
@@ -43,8 +41,12 @@ int main(int argc, char **argv) {
    parseFile("/tmp/weather.txt");
    system("rm /tmp/weather.txt");
 
-   printf("Date: %d-%d-%d\n",measureDate.day,measureDate.month,measureDate.year);
-   printf("Time: %d:%d\n",measureTime.hour+1,measureTime.minute);
+   tzset();
+   int localHour = measureTime.hour - round(timezone/3600) + daylight;
+   if(localHour >= 24)
+      localHour = localHour - 24;
+   printf("Date: %02d-%02d-%04d\n",measureDate.day,measureDate.month,measureDate.year);
+   printf("Time: %02d:%02d\n",localHour,measureTime.minute);
    printf("Wind Direction: %s\n",getWindDir());
    printf("Wind Speed: %d km/h\n",getWindSpeed("kmh"));
    printf("Gust Speed: %d km/h\n",getGustSpeed("kmh"));
@@ -68,8 +70,8 @@ int main(int argc, char **argv) {
    char strLine1[16];
    char strLine2[16];
 
-   sprintf(strLine1, "%d:%d %dkm/h %d%%", measureTime.hour+2, measureTime.minute, getWindSpeed("ms"), (int)round(getRelHumidity()));
-   lcdPrintf(fd, strLine1);
+   sprintf(strLine1, "%02d:%02d %dm/s %d%%", localHour, measureTime.minute, getWindSpeed("ms"), (int)round(getRelHumidity()));
+   lcdPuts(fd, strLine1);
 
    sprintf(strLine2, "%dhPa %d%cC %s", getPressure("hPa"), getTemperature("C"), 223, getWindDir());
    lcdPosition(fd, 0, 1);
